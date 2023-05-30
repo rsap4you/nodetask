@@ -9,11 +9,13 @@ const { request } = require("express");
 const cryptLib = require("cryptlib");
 const bcrypt = require("bcrypt");
 const middleware = require("../../../middleware/validator");
-
+ 
+var userData;
+var otpCode;
 var Auth = {
   validator: (request, callback) => {
     Auth.checkEmailused(request, (isUsed) => {
-      if (isUsed == null) {
+      if (isUsed != null) {
         callback("2", { keyword: "rest_keyword_user_null", content: {} }, {});
       } else {
         var otp = comman.randomotp();
@@ -70,7 +72,7 @@ var Auth = {
           email: request.email,
           email_verify:request.email_verify,
           role:request.role,
-          trainer_type_id:request.trainer_type_id,
+          trainer_type:request.trainer_type_id,
           per_session_price:request.per_session_price,
           speciality:request.speciality,
           login_type:request.login_type,
@@ -84,7 +86,20 @@ var Auth = {
 
           
         };
-
+        Auth.ValidateUser(request, (otp) => 
+        {
+          if (otp == null) {
+              callback( "2",{ keyword: "rest_keyword_user_not_signup", content: {} }, {} );
+            } else {
+              userData = userdata;
+              otpCode = otp;
+              callback(
+                "1",
+                { keyword: " User Sign up sucessfully", content: {} },
+                otp
+              );
+            }
+        })
         con.query(`INSERT INTO tbl_user SET ?`, [userdata], (error, result) => {
           console.log("error1", error);
           // console.log("error", error);
@@ -145,6 +160,61 @@ var Auth = {
       }
     });
   },
+     //Verify
+
+  verifyOtp: (request, callback) => {
+    var sql =
+      "SELECT * FROM tbl_user WHERE otp_code = ? AND is_active = 1 AND is_delete = 0";
+    con.query(sql, [request.otp_code], (error, result) => {
+      if (!error && result.length > 0) {
+        common.checkUpdateToken(result[0].id, request, (token) => {
+          console.log("Token:", token);
+          Auth.ValidateUser(result.id, (userdata) => {
+            // userdata.token =token;
+            callback(
+              "1",
+              { keywords: "rest_keywords_otp_message", content: {} },
+              userdata
+            );
+          });
+        });
+      } else {
+        callback(
+          "0",
+          { keywords: "rest_keywords_otp_not_match_message", content: {} },
+          {}
+        );
+        // console.log('verify error',error);
+      }
+    });
+  },
+    // resend otp
+
+    resendOtp: (request, callback) => {
+      var sql =
+        "UPDATE tbl_user WHERE otp = ? AND is_active = 1 AND is_delete = 0";
+      con.query(sql, [request.otp], (error, result) => {
+        if (!error && result.length > 0) {
+          console.log(result);
+          callback(
+            "1",
+            { keywords: "rest_keywords_resend_otp_message", content: {} },
+            {}
+          );
+        } else {
+          callback(
+            "0",
+            {
+              keywords: "rest_keywords_resend_otp_not_match_message",
+              content: {},
+            },
+            {}
+          );
+          console.log("resend otp error", error);
+        }
+      });
+    },
+  
   getuserdetails: (user_id, callback) => {
     con.query(
       `SELECT u.first_name,u.last_name,u.code,u.mobile,u.email,ifnull(di.token,'') as token,ifnull(di.device_type,'') as device_type,ifnull(di.device_token,'') as device_token,u.role,u.login_status,u.login_time,is_forget FROM tbl_user u
@@ -673,7 +743,7 @@ var Auth = {
                 to: "+91'" + request.mobile + "'",
                 from: '+13156442435',
             });
-            callback(1, { keyword: "otp_send_success_message" }, { otp: otp })
+            callback(otp)
 
             // You can implement your fallback code here
         }
@@ -810,49 +880,6 @@ chat_display : (request,user_id,callback) => {
     })
 },
 
-// filter
-Filter: function (request, callback) {
-  con.query("select * from tbl_user where id = ? ", [request.user_id], function (err, result) {
-
-      if (!err) {
-          var SessionTime = ""
-          if (request.from_time != undefined && request.to_time != "") {
-              SessionTime += `AND (tb.from_time != '${request.from_time}' AND  tb.to_time != '${request.to_time}')`
-          } else {
-              SessionTime = ""
-          }
-          var TrainerType = ""
-          if (request.trainer_type != undefined && request.trainer_type != "") {
-              TrainerType += `AND u.trainer_type = '${request.trainer_type}'`
-          } else {
-              TrainerType = ""
-          }
-          var Distance = ""
-          if (request.to_distance != undefined && request.to_distance != "") {
-              Distance += `km_away BETWEEN '${result[0].location}' and ${request.to_distance} `
-          }
-          var PriceBetween = ""
-          if (request.price_from != undefined && request.price_from != "" && request.price_to != undefined && request.price_to != "") {
-              PriceBetween += `AND td.per_session_price BETWEEN ${request.price_from} AND ${request.price_to}`
-          } else {
-              PriceBetween = ``
-          }
-          var sql = `Select concat(u.first_name , ' ' , u.last_name) as name, u.profile_image, u.mobile,u.email,u.speciality,u.rating,u.location,u.per_session_price, ROUND( ( 6371  ACOS( COS(RADIANS(${result[0].latitude}))  COS(RADIANS(u.latitude))  COS( RADIANS(u.longitude) - RADIANS(${result[0].longitude}) ) + SIN(RADIANS(u.latitude))  SIN(RADIANS(${result[0].latitude})) ) ) ) AS km_away from tbl_user as u join tbl_booking as b  on b.id=u.id 
-          join tbl_trainer_availability tb on u.id = tb.id
-          where u.is_active = 1 and u.is_delete = 0 ${TrainerType} ${SessionTime} having ${Distance} ${PriceBetween}`;
-          con.query(sql, (error, result1) => {
-              if (!error && result1.length > 0) {
-                  callback(result1)
-              } else {
-                  callback(err)
-              }
-          })
-      }
-      else {
-          callback('2', { keyword: "rest_keyword_trainer_not_avalable", content: {} }, err)
-      }
-  })
-},
 
 
 };

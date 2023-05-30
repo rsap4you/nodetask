@@ -98,7 +98,7 @@ router.post('/signup', (req, res) => {
         email_verify:'required',
         password: 'required_if:login_type,S',
         role:'required|in:user,trainer',
-        trainer_type_id:'required_if:role,==,trainer',
+        trainer_type:'required_if:role,==,trainer',
         per_session_price:'required_if:role,==,trainer',
         speciality:'required_if:role,==,trainer',
         
@@ -341,7 +341,7 @@ router.post('/forgotpassword', (req, res) => {
     // })
 })
 
-router.post('/changepswd', (req, res) => {
+router.patch('/changepswd', (req, res) => {
 
     // middleware.decryption(req.body, (request) => {
         var request = req.body;
@@ -367,7 +367,7 @@ router.post('/changepswd', (req, res) => {
 
 });
 //  profile info
-router.post('/personalinfo',(req,res)=>{
+router.patch('/personalinfo',(req,res)=>{
   // middleware.decryption(req.body,(request)=>{
      var request = req.body;
      var user_id = req.user_id
@@ -393,7 +393,7 @@ router.post('/personalinfo',(req,res)=>{
 })   
 
 //  my filteness information
-router.post('/myfitness',(req,res)=>{
+router.patch('/myfitness',(req,res)=>{
   // middleware.decryption(req.body,(request)=>{
      var request = req.body;
      var user_id = req.user_id
@@ -503,28 +503,5 @@ router.get("/chat_display", (req, res) => {
     }
   // });
 });
-
-router.get("/filter", (req, res) => {
-  // middleware.decryption(req.body, (request) => {
-    var request = req.body;
-    var user_id = req.user_id;
-
-    var rules = {
-        // sender_id: "required",
-        // receiver_id: "required",
-    };
-
-    var message = {
-      required: req.language.required,
-    };
-
-    if (middleware.checkValidation(res, request, rules, message)) {
-      Auth.Filter(request, user_id, (code, message, data) => {
-        middleware.sendResponse(req, res, code, message, data);
-      });
-    }
-  // });
-});
-
 
 module.exports = router;

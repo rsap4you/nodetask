@@ -50,7 +50,7 @@ router.post("/myreviews", (req, res) => {
 router.post("/blocktariner", (req, res) => {
   // middleware.decryption(req.body, (request) => {
     var request = req.body
-    var trainer_id = req.trainer_id
+    var trainer_id = req.user_id
     var rules = {
       trainer_id:"required",
       user_id:"required",
@@ -79,6 +79,26 @@ router.post("/blocktarinerdetails", (req, res) => {
     };
     if (middleware.checkValidation(res, request, rules, message)) {
       Service.blocktarinerdetails(request, user_id,(code, message, data) => {
+        middleware.sendResponse(req, res, code, message, data);
+      });
+    }
+  // });
+});
+
+//  unblock trainer
+router.post("/unblocktariner", (req, res) => {
+  // middleware.decryption(req.body, (request) => {
+    var request = req.body
+    var trainer_id = req.trainer_id
+    var rules = {
+      trainer_id:"required",
+      user_id:"required",
+    };
+    var message = {
+      required: "please enter :attr",
+    };
+    if (middleware.checkValidation(res, request, rules, message)) {
+      Service.unblocktariner(request, trainer_id, (code, message, data) => {
         middleware.sendResponse(req, res, code, message, data);
       });
     }
@@ -143,11 +163,14 @@ router.post("/mapview", (req, res) => {
 
 // homepage
 
-router.post("/homepage", (req, res) => {
+router.get("/homepage", (req, res) => {
   // middleware.decryption(req.body, (request) => {
    
     var request = req.body
     var user_id = req.user_id
+
+    var page = req.query.page;
+    var limit = req.query.limit;
     
     var rules = {
       // search:'required'
@@ -163,5 +186,170 @@ router.post("/homepage", (req, res) => {
   // });
 }); 
 
+router.get("/filter", (req, res) => {
+  // middleware.decryption(req.body, (request) => {
+    var request = req.body;
+    var user_id = req.user_id;
+
+    var rules = {
+        // sender_id: "required",
+        // receiver_id: "required",
+    };
+
+    var message = {
+      required: req.language.required,
+    };
+
+    if (middleware.checkValidation(res, request, rules, message)) {
+      Service.Filter(request, (code, message, data) => {
+        middleware.sendResponse(req, res, code, message, data);
+      });
+    }
+  // });
+});
+
+// book trainer
+router.post('/booktrainer',(req,res)=>{
+  var request = req.body;
+  var rules = {
+      trainer_id : "required",
+      book_date : "required",
+      // location_type:"required",
+      // address_1:"required",
+      // address_2:"required",
+      // zip_code:"required",
+      book_slot : "",
+      payment_type : "required_with:location_id",
+      card_id : "required_with:payment_type"
+  }
+
+  var message = {
+      required: req.language.required,
+  }
+
+  //  middleware.decryption(req.body,(request)=>{
+      var user_id = req.user_id;
+      if (middleware.checkValidation(res,request,rules,message)) {
+          Service.booktrainer(request,user_id,(code,message,data) => {
+              middleware.sendResponse(req, res, code, message ,data)
+          })
+      } 
+
+ })
+// ruuning booking 
+router.post('/runningbooking',(req,res)=>{
+  var request = req.body;
+  var rules = {
+      // trainer_id : "required",
+      
+  }
+
+  var message = {
+      required: req.language.required,
+  }
+
+  //  middleware.decryption(req.body,(request)=>{
+      var user_id = req.user_id;
+      if (middleware.checkValidation(res,request,rules,message)) {
+          Service.runningbooking(request,user_id,(code,message,data) => {
+              middleware.sendResponse(req, res, code, message ,data)
+          })
+      } 
+
+ })
+
+//  accepted booking
+router.post('/acceptedbooking',(req,res)=>{
+  var request = req.body;
+  var trainer_id =req.user_id;
+  var rules = {
+      order_id : "required",
+      
+  }
+
+  var message = {
+      required: req.language.required,
+  }
+
+  //  middleware.decryption(req.body,(request)=>{
+      var user_id = req.user_id;
+      if (middleware.checkValidation(res,request,rules,message)) {
+          Service.acceptedbooking(request,trainer_id,(code,message,data) => {
+              middleware.sendResponse(req, res, code, message ,data)
+          })
+      } 
+
+ })
+
+ //  cancel booking
+router.post('/cancelbooking',(req,res)=>{
+  var request = req.body;
+  var trainer_id =req.user_id;
+  var rules = {
+      order_id : "required",
+      
+  }
+
+  var message = {
+      required: req.language.required,
+  }
+
+  //  middleware.decryption(req.body,(request)=>{
+      var user_id = req.user_id;
+      if (middleware.checkValidation(res,request,rules,message)) {
+          Service.cancelbooking(request,trainer_id,(code,message,data) => {
+              middleware.sendResponse(req, res, code, message ,data)
+          })
+      } 
+
+ })
+//   my booking
+//  accepted booking
+router.post('/mybooking',(req,res)=>{
+  var request = req.body;
+  var trainer_id =req.user_id;
+  var rules = {
+      // order_id : "required",
+      
+  }
+
+  var message = {
+      required: req.language.required,
+  }
+
+  //  middleware.decryption(req.body,(request)=>{
+      if (middleware.checkValidation(res,request,rules,message)) {
+          Service.myBooking(request,trainer_id,(code,message,data) => {
+              middleware.sendResponse(req, res, code, message ,data)
+          })
+      } 
+
+ })
+
+
+ //add notification
+router.post('/addnotification', (req, res) => {
+  var request = req.body
+  request.user_id = req.user_id
+  var rules = {
+      message: 'required',
+  }
+  var message = {
+      required: 'please enter :attr'
+  }
+  if (middleware.checkValidation(res, request, rules, message)) {
+      Service.addnotification(request, (code, message, data) => {
+          middleware.sendResponse(req, res, code, message, data)
+      })
+  }
+})
+//notification
+router.get('/notification', (req, res) => {
+  var request = req.body
+  request.user_id = req.user_id
+  Service.notification(request, (code, message, data) => {
+      middleware.sendResponse(req, res, code, message, data)
+  })
+})
 
 module.exports = router;
